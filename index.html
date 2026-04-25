@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abfrage zur TGA in Wohngebäuden – Monkey Test</title>
+  <style>
+    /* ── FARBEN & GRUNDVARIABLEN ── */
+    :root {
+      --blau:      #1E94DA;
+      --blau-hell: #e8f4fc;
+      --grau:      #68696B;
+      --grau-hell: #f2f2f2;
+      --weis:      #ffffff;
+      --text:      #2b2b2b;
+      --border:    #d0d0d0;
+      --radius:    8px;
+      --shadow:    0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Helvetica Neue, Arial, sans-serif;
+      background: var(--grau-hell);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--blau);
+      color: var(--weis);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .logo {
+      width: 44px; height: 44px;
+      background: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--blau);
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    /* ── HAUPTBEREICH ── */
+    main {
+      max-width: 820px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── PROJEKTINFO ── */
+    .projekt-banner {
+      background: var(--weis);
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--blau);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .projekt-banner .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--grau);
+      font-weight: 600;
+    }
+
+    .projekt-banner .wert {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .trennlinie {
+      width: 1px; height: 36px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    /* ── ABSCHNITTS-HEADER ── */
+    .abschnitt-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .abschnitt-badge {
+      background: var(--blau);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    .abschnitt-titel {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── FRAGE-KARTE ── */
+    .karte {
+      background: var(--weis);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s;
+    }
+
+    .karte:focus-within {
+      border-color: var(--blau);
+    }
+
+    .frage-nr {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blau);
+      margin-bottom: 6px;
+    }
+
+    .frage-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    /* ── OPTIONEN ── */
+    .optionen {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: var(--weis);
+    }
+
+    .option:hover {
+      border-color: var(--blau);
+      background: var(--blau-hell);
+    }
+
+    /* Aktiv-Zustand wenn radio checked */
+    .option input[type="radio"] {
+      display: none;
+    }
+
+    .option.aktiv {
+      border-color: var(--blau);
+      background: var(--blau-hell);
+    }
+
+    .radio-kreis {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .option.aktiv .radio-kreis {
+      border-color: var(--blau);
+      background: var(--blau);
+    }
+
+    .option.aktiv .radio-kreis::after {
+      content: '';
+      width: 7px; height: 7px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .option-text {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* ── UNTEROPTIONEN (eingerückt) ── */
+    .unter-optionen {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      margin-left: 28px;
+      padding: 12px 16px;
+      background: var(--grau-hell);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--blau);
+    }
+
+    .unter-optionen.sichtbar {
+      display: flex;
+    }
+
+    .unter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .unter-option input[type="radio"] {
+      accent-color: var(--blau);
+      width: 15px; height: 15px;
+    }
+
+    .unter-option label {
+      font-size: 0.85rem;
+      color: var(--grau);
+      cursor: pointer;
+    }
+
+    /* ── SPEICHER-STATUS ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--grau);
+      margin-top: 14px;
+    }
+
+    .status-punkt {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      transition: background 0.3s;
+    }
+
+    .status-punkt.gespeichert { background: #4caf50; }
+    .status-punkt.geaendert  { background: #ff9800; }
+
+    /* ── FOOTER BUTTONS ── */
+    .aktionen {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primaer {
+      background: var(--blau);
+      color: white;
+    }
+
+    .btn-primaer:hover {
+      background: #1780c0;
+    }
+
+    .btn-sekundaer {
+      background: transparent;
+      color: var(--grau);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-sekundaer:hover {
+      border-color: var(--grau);
+      color: var(--text);
+    }
+
+    .fortschritt {
+      font-size: 0.78rem;
+      color: var(--grau);
+    }
+
+    /* ── TOAST NACHRICHT ── */
+    .toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: #2b2b2b;
+      color: white;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .toast.sichtbar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">MT</div>
+  <div>
+    <h1>Abfrage zur TGA in Wohngebäuden</h1>
+    <p>gemäß DIN V 18599 · Monkey Test</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- PROJEKTINFO -->
+  <div class="projekt-banner">
+    <div>
+      <div class="label">Projekt</div>
+      <div class="wert" id="projekt-name">Muster-Projekt 01</div>
+    </div>
+    <div class="trennlinie"></div>
+    <div>
+      <div class="label">Status</div>
+      <div class="wert" id="projekt-status">In Bearbeitung</div>
+    </div>
+    <div class="trennlinie"></div>
+    <div>
+      <div class="label">Zuletzt gespeichert</div>
+      <div class="wert" id="letzte-speicherung">–</div>
+    </div>
+  </div>
+
+  <!-- ABSCHNITT: HEIZSYSTEM -->
+  <div class="abschnitt-header">
+    <span class="abschnitt-badge">Abschnitt 1</span>
+    <span class="abschnitt-titel">Heizsystem</span>
+  </div>
+
+  <!-- FRAGE 1 -->
+  <div class="karte">
+    <div class="frage-nr">Frage 1</div>
+    <div class="frage-text">
+      Betriebsweise / Schaltung eines oder mehrerer Wärmeerzeuger pro versorgten Bereich
+    </div>
+
+    <div class="optionen" id="optionen-f1">
+
+      <!-- Option A -->
+      <div class="option" id="opt-a" onclick="waehleOption('f1','a')">
+        <input type="radio" name="f1" value="a" />
+        <div class="radio-kreis"></div>
+        <div class="option-text">Ein konventioneller Wärmeerzeuger</div>
+      </div>
+
+      <!-- Option B -->
+      <div class="option" id="opt-b" onclick="waehleOption('f1','b')">
+        <input type="radio" name="f1" value="b" />
+        <div class="radio-kreis"></div>
+        <div>
+          <div class="option-text">Zwei Wärmeerzeuger</div>
+          <!-- Unteroptionen B -->
+          <div class="unter-optionen" id="unter-b">
+            <div class="unter-option">
+              <input type="radio" name="f1-unter-b" id="b-parallel" value="parallel" onchange="speichereAntwort()" />
+              <label for="b-parallel">Parallelbetrieb</label>
+            </div>
+            <div class="unter-option">
+              <input type="radio" name="f1-unter-b" id="b-folge" value="folgeschaltung" onchange="speichereAntwort()" />
+              <label for="b-folge">Folgeschaltung</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option C -->
+      <div class="option" id="opt-c" onclick="waehleOption('f1','c')">
+        <input type="radio" name="f1" value="c" />
+        <div class="radio-kreis"></div>
+        <div>
+          <div class="option-text">Drei Wärmeerzeuger</div>
+          <!-- Unteroptionen C -->
+          <div class="unter-optionen" id="unter-c">
+            <div class="unter-option">
+              <input type="radio" name="f1-unter-c" id="c-parallel" value="parallel" onchange="speichereAntwort()" />
+              <label for="c-parallel">Parallelbetrieb</label>
+            </div>
+            <div class="unter-option">
+              <input type="radio" name="f1-unter-c" id="c-folge" value="folgeschaltung" onchange="speichereAntwort()" />
+              <label for="c-folge">Folgeschaltung</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /optionen -->
+
+    <!-- Speicher-Status -->
+    <div class="status-bar">
+      <div class="status-punkt" id="status-punkt-f1"></div>
+      <span id="status-text-f1">Noch nicht beantwortet</span>
+    </div>
+
+  </div><!-- /karte -->
+
+  <!-- AKTIONEN -->
+  <div class="aktionen">
+    <div class="fortschritt" id="fortschritt-text">0 von 1 Fragen beantwortet</div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-sekundaer" onclick="exportiereJSON()">Daten speichern</button>
+      <button class="btn btn-primaer" onclick="zeigeToast('PDF-Export wird in einer späteren Version eingebaut.')">Als PDF exportieren</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── ZUSTAND ──────────────────────────────────────────────
+  // Hier werden alle Antworten gespeichert (im Browser-Speicher)
+  const SPEICHER_KEY = 'tga_fragebogen_v1';
+
+  let antworten = ladeVomSpeicher();
+
+  // ── OPTION WÄHLEN ────────────────────────────────────────
+  function waehleOption(frage, wert) {
+    // Alle Optionen dieser Frage: aktiv-Klasse entfernen
+    document.querySelectorAll('#optionen-f1 .option').forEach(el => {
+      el.classList.remove('aktiv');
+    });
+
+    // Unteroptionen verstecken
+    document.querySelectorAll('.unter-optionen').forEach(el => {
+      el.classList.remove('sichtbar');
+    });
+
+    // Gewählte Option markieren
+    const gewaehlt = document.getElementById('opt-' + wert);
+    if (gewaehlt) gewaehlt.classList.add('aktiv');
+
+    // Unteroptionen anzeigen wenn B oder C gewählt
+    if (wert === 'b') {
+      document.getElementById('unter-b').classList.add('sichtbar');
+    }
+    if (wert === 'c') {
+      document.getElementById('unter-c').classList.add('sichtbar');
+    }
+
+    // Antwort merken
+    antworten['f1_haupt'] = wert;
+    // Unteroption zurücksetzen wenn Hauptoption wechselt
+    delete antworten['f1_unter'];
+
+    speichereAntwort();
+    aktualisiereStatus();
+  }
+
+  // ── UNTEROPTION SPEICHERN ────────────────────────────────
+  document.querySelectorAll('input[name="f1-unter-b"], input[name="f1-unter-c"]').forEach(input => {
+    input.addEventListener('change', function() {
+      antworten['f1_unter'] = this.value;
+      speichereAntwort();
+    });
+  });
+
+  // ── STATUS AKTUALISIEREN ─────────────────────────────────
+  function aktualisiereStatus() {
+    const punkt = document.getElementById('status-punkt-f1');
+    const text  = document.getElementById('status-text-f1');
+    const fortschritt = document.getElementById('fortschritt-text');
+
+    if (antworten['f1_haupt']) {
+      const labels = {
+        a: 'Ein konventioneller Wärmeerzeuger',
+        b: 'Zwei Wärmeerzeuger',
+        c: 'Drei Wärmeerzeuger'
+      };
+      const unter = antworten['f1_unter'] ? ` · ${antworten['f1_unter']}` : '';
+      text.textContent = '✓ ' + labels[antworten['f1_haupt']] + unter;
+      punkt.className = 'status-punkt gespeichert';
+      fortschritt.textContent = '1 von 1 Fragen beantwortet';
+    }
+  }
+
+  // ── IM BROWSER SPEICHERN ─────────────────────────────────
+  // localStorage = Daten bleiben auch nach Schließen des Browsers erhalten
+  function speichereAntwort() {
+    localStorage.setItem(SPEICHER_KEY, JSON.stringify(antworten));
+    const now = new Date();
+    document.getElementById('letzte-speicherung').textContent =
+      now.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+    aktualisiereStatus();
+  }
+
+  // ── AUS SPEICHER LADEN ───────────────────────────────────
+  function ladeVomSpeicher() {
+    try {
+      const gespeichert = localStorage.getItem(SPEICHER_KEY);
+      return gespeichert ? JSON.parse(gespeichert) : {};
+    } catch(e) {
+      return {};
+    }
+  }
+
+  // ── BEIM LADEN: GESPEICHERTEN ZUSTAND WIEDERHERSTELLEN ───
+  window.addEventListener('DOMContentLoaded', function() {
+    if (antworten['f1_haupt']) {
+      waehleOption('f1', antworten['f1_haupt']);
+      // Unteroption wiederherstellen
+      if (antworten['f1_unter']) {
+        const hauptwahl = antworten['f1_haupt'];
+        const unterInput = document.querySelector(
+          `input[name="f1-unter-${hauptwahl}"][value="${antworten['f1_unter']}"]`
+        );
+        if (unterInput) unterInput.checked = true;
+      }
+    }
+  });
+
+  // ── DATEN EXPORTIEREN (JSON) ─────────────────────────────
+  function exportiereJSON() {
+    const daten = {
+      projekt: document.getElementById('projekt-name').textContent,
+      datum: new Date().toLocaleDateString('de-DE'),
+      antworten: antworten
+    };
+    const blob = new Blob([JSON.stringify(daten, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tga-abfrage.json';
+    a.click();
+    zeigeToast('Daten wurden gespeichert.');
+  }
+
+  // ── TOAST NACHRICHT ──────────────────────────────────────
+  function zeigeToast(nachricht) {
+    const toast = document.getElementById('toast');
+    toast.textContent = nachricht;
+    toast.classList.add('sichtbar');
+    setTimeout(() => toast.classList.remove('sichtbar'), 3000);
+  }
+</script>
+
+</body>
+</html>
