@@ -451,7 +451,7 @@
   async function ladeProjekt() {
     try {
       const { data, error } = await db
-        .from('antworten')
+        .from('TGA_Antworten')
         .select('*')
         .eq('projekt_name', projektName)
         .maybeSingle(); // gibt null zurück wenn nicht gefunden, kein Fehler
@@ -550,7 +550,7 @@
 
     try {
       const { error } = await db
-        .from('antworten')
+        .from('TGA_Antworten')
         .upsert({
           projekt_name:      projektName,
           antworten:         antworten,
