@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard – Monkey Test TGA</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --blau:      #1E94DA;
+      --blau-hell: #e8f4fc;
+      --grau:      #68696B;
+      --grau-hell: #f2f2f2;
+      --text:      #2b2b2b;
+      --border:    #d0d0d0;
+      --radius:    8px;
+      --shadow:    0 2px 12px rgba(0,0,0,0.08);
+      --gruen:     #4caf50;
+      --orange:    #ff9800;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Helvetica Neue, Arial, sans-serif; background: var(--grau-hell); color: var(--text); min-height: 100vh; }
+
+    /* ── LOGIN ── */
+    .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .login-box { background: white; border-radius: 12px; padding: 40px; width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); text-align: center; }
+    .login-logo { width: 56px; height: 56px; background: var(--blau); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: white; margin: 0 auto 20px; }
+    .login-box h1 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
+    .login-box p { font-size: 0.85rem; color: var(--grau); margin-bottom: 28px; }
+    .login-box input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; font-family: inherit; outline: none; margin-bottom: 12px; transition: border-color 0.2s; }
+    .login-box input:focus { border-color: var(--blau); }
+    .login-box button { width: 100%; padding: 12px; background: var(--blau); color: white; border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .login-box button:hover { background: #1780c0; }
+    .login-fehler { color: #f44336; font-size: 0.82rem; margin-top: 8px; display: none; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; }
+    header { background: var(--blau); color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    .header-links { display: flex; align-items: center; gap: 16px; }
+    .logo { width: 38px; height: 38px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: var(--blau); }
+    header h1 { font-size: 1rem; font-weight: 600; }
+    header p { font-size: 0.75rem; opacity: 0.8; margin-top: 2px; }
+    .btn-logout { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+    .btn-logout:hover { background: rgba(255,255,255,0.3); }
+
+    main { max-width: 1000px; margin: 32px auto; padding: 0 24px 60px; }
+
+    /* STATISTIK KARTEN */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+    .stat-karte { background: white; border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); border-left: 4px solid var(--blau); }
+    .stat-karte .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--grau); font-weight: 700; margin-bottom: 8px; }
+    .stat-karte .wert { font-size: 2rem; font-weight: 800; color: var(--blau); line-height: 1; }
+    .stat-karte .sub { font-size: 0.78rem; color: var(--grau); margin-top: 4px; }
+
+    /* PROJEKT TABELLE */
+    .tabellen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .tabellen-header h2 { font-size: 1rem; font-weight: 700; }
+    .btn-refresh { background: transparent; border: 1.5px solid var(--border); color: var(--grau); padding: 7px 16px; border-radius: var(--radius); font-size: 0.82rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-refresh:hover { border-color: var(--blau); color: var(--blau); }
+
+    .tabelle-wrapper { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--grau-hell); }
+    thead th { padding: 12px 20px; text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--grau); border-bottom: 1px solid var(--border); }
+    tbody tr { border-bottom: 1px solid var(--grau-hell); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--blau-hell); }
+    tbody td { padding: 14px 20px; font-size: 0.88rem; vertical-align: middle; }
+
+    .projekt-name { font-weight: 600; color: var(--text); }
+    .datum { color: var(--grau); font-size: 0.82rem; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+    .badge-komplett { background: #e8f5e9; color: #2e7d32; }
+    .badge-offen { background: #fff3e0; color: #e65100; }
+
+    .antwort-chip { display: inline-block; background: var(--blau-hell); color: var(--blau); padding: 3px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+
+    .btn-detail { background: transparent; border: 1.5px solid var(--border); color: var(--grau); padding: 5px 12px; border-radius: var(--radius); font-size: 0.78rem; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-detail:hover { border-color: var(--blau); color: var(--blau); }
+
+    .leer-hinweis { text-align: center; padding: 48px; color: var(--grau); font-size: 0.9rem; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal-overlay.aktiv { display: flex; }
+    .modal { background: white; border-radius: 12px; padding: 32px; width: 520px; max-width: 90vw; max-height: 80vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--grau); line-height: 1; }
+    .modal-zeile { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--grau-hell); font-size: 0.88rem; }
+    .modal-zeile:last-child { border-bottom: none; }
+    .modal-zeile .frage { color: var(--grau); max-width: 55%; }
+    .modal-zeile .antwort { font-weight: 600; color: var(--text); text-align: right; }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #2b2b2b; color: white; padding: 12px 20px; border-radius: var(--radius); font-size: 0.85rem; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; z-index: 999; }
+    .toast.sichtbar { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div class="login-wrapper" id="login-wrapper">
+  <div class="login-box">
+    <div class="login-logo">MT</div>
+    <h1>Admin Dashboard</h1>
+    <p>Monkey Test · TGA Abfrage</p>
+    <input type="password" id="passwort-input" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter') login()" />
+    <button onclick="login()">Anmelden</button>
+    <p class="login-fehler" id="login-fehler">Falsches Passwort. Bitte erneut versuchen.</p>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+  <header>
+    <div class="header-links">
+      <div class="logo">MT</div>
+      <div>
+        <h1>Admin Dashboard</h1>
+        <p>TGA Abfrage · Alle Projekte</p>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Abmelden</button>
+  </header>
+
+  <main>
+    <div class="stats">
+      <div class="stat-karte">
+        <div class="label">Projekte gesamt</div>
+        <div class="wert" id="stat-gesamt">–</div>
+        <div class="sub">in der Datenbank</div>
+      </div>
+      <div class="stat-karte">
+        <div class="label">Vollständig ausgefüllt</div>
+        <div class="wert" id="stat-komplett">–</div>
+        <div class="sub">alle Fragen beantwortet</div>
+      </div>
+      <div class="stat-karte">
+        <div class="label">Zuletzt aktiv</div>
+        <div class="wert" style="font-size:1rem; padding-top:8px;" id="stat-zuletzt">–</div>
+        <div class="sub">letzter Eintrag</div>
+      </div>
+    </div>
+
+    <div class="tabellen-header">
+      <h2>Alle Projekte</h2>
+      <button class="btn-refresh" onclick="ladeDaten()">↻ Aktualisieren</button>
+    </div>
+
+    <div class="tabelle-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Projektname</th>
+            <th>Frage 1 – Wärmeerzeuger</th>
+            <th>Status</th>
+            <th>Zuletzt gespeichert</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabellen-inhalt">
+          <tr><td colspan="5" class="leer-hinweis">Lade Daten...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-titel">Projektdetails</h2>
+      <button class="modal-close" onclick="schliesseModal()">×</button>
+    </div>
+    <div id="modal-inhalt"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://gdzrlnlqujmvebjeahme.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkenJsbmxxdWptdmViamVhaG1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMjY3OTYsImV4cCI6MjA5MjcwMjc5Nn0.We8l6camVJ4Z6ODCIoyJwSEjhZOOypzicjW19WpLgtI';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── PASSWORT ─────────────────────────────────────────────
+  // Hier kannst du dein Passwort ändern:
+  const ADMIN_PASSWORT = 'monkeytest2024';
+
+  let alleDaten = [];
+
+  function login() {
+    const eingabe = document.getElementById('passwort-input').value;
+    if (eingabe === ADMIN_PASSWORT) {
+      document.getElementById('login-wrapper').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      ladeDaten();
+    } else {
+      document.getElementById('login-fehler').style.display = 'block';
+      document.getElementById('passwort-input').value = '';
+      document.getElementById('passwort-input').focus();
+    }
+  }
+
+  function logout() {
+    document.getElementById('login-wrapper').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('passwort-input').value = '';
+  }
+
+  // ── DATEN LADEN ──────────────────────────────────────────
+  async function ladeDaten() {
+    document.getElementById('tabellen-inhalt').innerHTML = '<tr><td colspan="5" class="leer-hinweis">Lade Daten...</td></tr>';
+    try {
+      const { data, error } = await db
+        .from('TGA_Antworten')
+        .select('*')
+        .order('zuletzt_geaendert', { ascending: false });
+
+      if (error) throw error;
+      alleDaten = data || [];
+      renderTabelle();
+      renderStats();
+    } catch (err) {
+      document.getElementById('tabellen-inhalt').innerHTML = '<tr><td colspan="5" class="leer-hinweis">Fehler beim Laden der Daten.</td></tr>';
+      console.error(err);
+    }
+  }
+
+  // ── STATISTIKEN ──────────────────────────────────────────
+  function renderStats() {
+    const gesamt = alleDaten.length;
+    const komplett = alleDaten.filter(p => p.antworten && p.antworten['f1_haupt']).length;
+    const zuletzt = alleDaten.length > 0 ? formatDatum(alleDaten[0].zuletzt_geaendert) : '–';
+
+    document.getElementById('stat-gesamt').textContent = gesamt;
+    document.getElementById('stat-komplett').textContent = komplett;
+    document.getElementById('stat-zuletzt').textContent = zuletzt;
+  }
+
+  // ── TABELLE RENDERN ──────────────────────────────────────
+  function renderTabelle() {
+    const tbody = document.getElementById('tabellen-inhalt');
+
+    if (alleDaten.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="leer-hinweis">Noch keine Projekte vorhanden.</td></tr>';
+      return;
+    }
+
+    const optionenLabels = {
+      a: 'Ein Wärmeerzeuger',
+      b: 'Zwei Wärmeerzeuger',
+      c: 'Drei Wärmeerzeuger'
+    };
+
+    tbody.innerHTML = alleDaten.map((projekt, i) => {
+      const ant = projekt.antworten || {};
+      const haupt = ant['f1_haupt'];
+      const unter = ant['f1_unter'];
+      const hauptLabel = haupt ? optionenLabels[haupt] : null;
+      const antwortText = hauptLabel ? (unter ? `${hauptLabel} · ${unter}` : hauptLabel) : null;
+      const komplett = !!haupt;
+
+      return `
+        <tr>
+          <td><span class="projekt-name">${projekt.projekt_name}</span></td>
+          <td>${antwortText ? `<span class="antwort-chip">${antwortText}</span>` : '<span style="color:var(--grau);font-size:0.82rem;">Noch offen</span>'}</td>
+          <td><span class="badge ${komplett ? 'badge-komplett' : 'badge-offen'}">${komplett ? 'Vollständig' : 'Offen'}</span></td>
+          <td><span class="datum">${formatDatum(projekt.zuletzt_geaendert)}</span></td>
+          <td><button class="btn-detail" onclick="zeigeDetail(${i})">Details</button></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ── DETAIL MODAL ─────────────────────────────────────────
+  function zeigeDetail(index) {
+    const projekt = alleDaten[index];
+    const ant = projekt.antworten || {};
+    const optLabels = { a: 'Ein konventioneller Wärmeerzeuger', b: 'Zwei Wärmeerzeuger', c: 'Drei Wärmeerzeuger' };
+
+    document.getElementById('modal-titel').textContent = projekt.projekt_name;
+
+    const antwortText = ant['f1_haupt']
+      ? optLabels[ant['f1_haupt']] + (ant['f1_unter'] ? ` (${ant['f1_unter']})` : '')
+      : 'Nicht beantwortet';
+
+    document.getElementById('modal-inhalt').innerHTML = `
+      <div class="modal-zeile">
+        <span class="frage">Projektname</span>
+        <span class="antwort">${projekt.projekt_name}</span>
+      </div>
+      <div class="modal-zeile">
+        <span class="frage">Zuletzt gespeichert</span>
+        <span class="antwort">${formatDatum(projekt.zuletzt_geaendert)}</span>
+      </div>
+      <div class="modal-zeile">
+        <span class="frage" style="font-weight:600; color: var(--blau);">Frage 1 – Betriebsweise / Schaltung Wärmeerzeuger</span>
+        <span class="antwort">${antwortText}</span>
+      </div>
+    `;
+
+    document.getElementById('modal').classList.add('aktiv');
+  }
+
+  function schliesseModal() {
+    document.getElementById('modal').classList.remove('aktiv');
+  }
+
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) schliesseModal();
+  });
+
+  function formatDatum(iso) {
+    if (!iso) return '–';
+    return new Date(iso).toLocaleString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function zeigeToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('sichtbar');
+    setTimeout(() => t.classList.remove('sichtbar'), 3000);
+  }
+</script>
+</body>
+</html>
